@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ namespace Starter
 {
     class Program
     {
+        private static SnifferManager manager = new SnifferManager();
         static void Main(string[] args)
         {
             string[] urls = new String[]
@@ -35,22 +37,26 @@ namespace Starter
                 "https://blog.angular-university.io/angular-jwt-authentication/",
 
             };
-            SnifferManager manager = new SnifferManager();
+           
             manager.Subscribe(ResultsSniff_CollectionChanged);
-            manager.AddUrl(urls);
-            manager.Start();
+            manager.Load(urls);
+          //  manager.Start();
             manager.Stop();
+            Console.WriteLine(manager.ResultsSniffing.Count);
+            
+            Console.ReadLine();
 
 
 
-         
 
 
         }
 
         private static void ResultsSniff_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            Console.WriteLine(e.NewItems);
+            ObservableCollection<SniffResult> collection = sender as ObservableCollection<SniffResult>;
+            if(collection.Count>10)
+                manager.Stop();
         }
        
     }

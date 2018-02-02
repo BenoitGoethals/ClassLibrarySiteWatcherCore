@@ -19,14 +19,14 @@ namespace ClassLibrarySiteWatcherCore
 
         private readonly CancellationTokenSource _tokenSource = new CancellationTokenSource();
         private readonly CancellationToken _cancellationToken;
-   
+
         public void Subscribe(NotifyCollectionChangedEventHandler changedEventHandler)
         {
             _resultsSniff.CollectionChanged += changedEventHandler;
         }
         public SnifferManager()
         {
-         
+
 
             _cancellationToken = _tokenSource.Token;
 
@@ -35,84 +35,70 @@ namespace ClassLibrarySiteWatcherCore
 
         public ObservableCollection<SniffResult> ResultsSniffing => _resultsSniff;
 
-        public void AddUrl(string[] urlStrings)
+        public void Load(string[] urlStrings)
         {
-            
+            string ret;
             foreach (string url in urlStrings)
             {
-                _sniffers.Add(new Task(action: async () =>
-             {
+               
+                    Task task = Task.Factory.StartNew(
+                        () =>
+                        {
 
-                 Sniffer sniff = SnifferFactory.Instance().Create(url);
-                 try
-                 {
-                     var ret = sniff.Sniff().Result;
+                            Sniffer sniff = SnifferFactory.Instance().Create(url);
+                            Console.WriteLine("strated");
+                            while (true)
+                            {
+                                try
+                                {
+                                
 
-                     _resultsSniff.Add(new SniffResult()
-                     {
+                                      ret = sniff.Sniff().Result;
+                                      
+                                    var restResult = new SniffResult()
+                                    {
 
-                         Url = url,
-                         DateTime = DateTime.Now,
-                         Result = ret
+                                        Url = url,
+                                        DateTime = DateTime.Now,
+                                        Result = ret
 
-                     });
-                 }
-                 catch (HttpRequestException ie)
-                 {
-                     Console.WriteLine("   {0}: {1}", ie.GetType().Name, ie.Message);
-                 }
-                 catch (AggregateException e)
-                 {
-                     Console.WriteLine("Exception messages:");
-                     foreach (var ie in e.InnerExceptions)
-                         Console.WriteLine("   {0}: {1}", ie.GetType().Name, ie.Message);
-                 }
+                                    };
+                                    Console.WriteLine(restResult.Result);
+                                    _resultsSniff.Add(restResult);
+
+                                 
+
+                                }
+                                catch (HttpRequestException ie)
+                                {
+                                    Console.WriteLine("   {0}: {1}", ie.GetType().Name, ie.Message);
+                                }
+                                catch (AggregateException e)
+                                {
+                                    Console.WriteLine("Exception messages:");
+                                    foreach (var ie in e.InnerExceptions)
+                                        Console.WriteLine("   {0}: {1}", ie.GetType().Name, ie.Message);
+                                }
+
+                            }
+
+                        }, _cancellationToken);
+                    this._sniffers.Add(task);
                 
-                     
-
-             }, cancellationToken: _cancellationToken));
             }
+            Task.WaitAll(this._sniffers.ToArray());
+
         }
 
-        public void Start()
-        {
-            int t = 0;
-            try
-            {
-                do
-                {
-                    foreach (var task in _sniffers)
-                    {
-                                  
-                        if(task.Status!=TaskStatus.RanToCompletion && !task.IsCompleted)
-                        task.Start();
 
-                    }
-
-                    Task.WaitAll(this._sniffers.ToArray());
-                } while (++t<20);
-            }
-            catch (AggregateException e)
-            {
-                Console.WriteLine("Exception messages:");
-                foreach (var ie in e.InnerExceptions)
-                    Console.WriteLine("   {0}: {1}", ie.GetType().Name, ie.Message);
-
-           
-            }
-           
-
-            Console.WriteLine("end");
-
-        }
 
 
         public void Stop()
         {
             try
             {
-            
-                        _tokenSource.Cancel();
+
+                _tokenSource.Cancel();
 
             }
             catch (AggregateException e)
@@ -121,11 +107,11 @@ namespace ClassLibrarySiteWatcherCore
                 foreach (var ie in e.InnerExceptions)
                     Console.WriteLine("   {0}: {1}", ie.GetType().Name, ie.Message);
 
-               
+
             }
             finally
             {
-               
+
                 _tokenSource?.Dispose();
             }
         }

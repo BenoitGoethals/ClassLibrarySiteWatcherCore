@@ -39,8 +39,8 @@ namespace ClassLibrarySiteWatcherCore.Tests
             };
             SnifferManager manager=new SnifferManager();
             manager.Subscribe(ResultsSniff_CollectionChanged);
-            manager.AddUrl(urls);
-            manager.Start();
+           manager.Load(urls);
+      //      manager.Start();
            manager.Stop();
 
       
